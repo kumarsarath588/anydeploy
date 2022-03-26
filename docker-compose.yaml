@@ -1,0 +1,78 @@
+version: '3'
+services:
+
+# Pull and run mysql from docker hub image
+# Mount data volume and run database schema required for our app
+# Set Mysql user details and database name
+  mysql:
+    image: mysql:5.7.37
+    container_name: mysql-server
+    restart: always
+    volumes:
+      - 'mysql_data:/var/lib/mysql'
+      - './schema:/docker-entrypoint-initdb.d'
+    environment:
+      MYSQL_USER: dbadmin
+      MYSQL_PASSWORD: BcGH2Gj41J5VF1
+      MYSQL_ROOT_PASSWORD: BcGH2Gj41J5VF1
+      MYSQL_DATABASE: anydeploy
+    networks:
+      - app-network
+
+# Pull and run rabbitmq from docker hub image
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: rabbit-cluster
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - '8080:15672'
+    networks:
+      - app-network
+
+# App server image is built from Dockerfile at startup
+# Expose port 8080 to host port 80
+# Set dependency on mysql & rabbitmq
+# Set Database user & password
+  anydeploy-server:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: always
+    ports:
+      - '80:8080'
+    depends_on:
+      - mysql
+      - rabbitmq
+    environment:
+      - APP_DB_USERNAME=dbadmin
+      - APP_DB_PASSWORD=BcGH2Gj41J5VF1
+    command: /app/anydeploy -server
+    networks:
+      - app-network
+
+# App worker image is built from Dockerfile at startup
+# Set dependency on mysql & rabbitmq
+# Set Database user & password
+  anydeploy-worker:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: always
+    ports:
+      - '80:8080'
+    depends_on:
+      - mysql
+      - rabbitmq
+    environment:
+      - APP_DB_USERNAME=dbadmin
+      - APP_DB_PASSWORD=BcGH2Gj41J5VF1
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
+    driver: local
+networks:
+  app-network:
+    driver: bridge
