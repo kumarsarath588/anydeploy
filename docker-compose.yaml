@@ -59,14 +59,14 @@ services:
       context: .
       dockerfile: ./Dockerfile
     restart: always
-    ports:
-      - '80:8080'
     depends_on:
       - mysql
       - rabbitmq
     environment:
       - APP_DB_USERNAME=dbadmin
       - APP_DB_PASSWORD=BcGH2Gj41J5VF1
+    volumes:
+      - ./kube-config:/home/admin/.kube
     networks:
       - app-network
 
